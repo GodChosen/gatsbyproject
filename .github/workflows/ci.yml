@@ -1,0 +1,41 @@
+name: Build, Test, and Containerize the App
+
+on: [push]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service: [client, simplehood_api, simDAQ_api]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
+
+      - name: Install dependencies and build the app
+        run: |
+          cd ../../${{ matrix.service }} && yarn dev
+
+      - name: Run tests
+        run: |
+          cd ../../${{ matrix.service }} && yarn test
+
+      - name: Build the Docker image
+        run: |
+          cd ../../${{ matrix.service }}
+          docker build -t ${{ matrix.service }} -f ./${{ matrix.service }}/Dockerfile .
+
+      - name: Push Docker image
+        run: |
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          docker tag ${{ matrix.service }} ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
+
+  
