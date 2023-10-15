@@ -21,15 +21,25 @@ jobs:
 
       - name: Install dependencies and build the app
         run: |
-          cd ../../${{ matrix.service }} && yarn dev
+          sudo apt install curl 
+          curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash 
+          # Customize the nodejs version for each service
+          if [ "${{ matrix.service }}" == "client" ]; then
+            nvm install 16.13.0-alpine && nvm use 16.13.0-alpine
+          elif [ "${{ matrix.service }}" == "simplehood_api" ]; then
+            nvm install 14.20.1-alpine && nvm use 14.20.1-alpine
+          elif [ "${{ matrix.service }}" == "simDAQ_api" ]; then
+            nvm install 14.20.1-alpine && nvm use 14.20.1-alpine
+          fi
+          cd ./${{ matrix.service }} && yarn dev
 
       - name: Run tests
         run: |
-          cd ../../${{ matrix.service }} && yarn test
+          cd ./${{ matrix.service }} && yarn test
 
       - name: Build the Docker image
         run: |
-          cd ../../${{ matrix.service }}
+          cd ./${{ matrix.service }}
           docker build -t ${{ matrix.service }} -f ./${{ matrix.service }}/Dockerfile .
 
       - name: Push Docker image
